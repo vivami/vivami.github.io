@@ -4,7 +4,7 @@ Guid
 ----
 781a4161-4490-408d-814a-93efe3b100c3
 
-</code></pre></div></div> <p>The third command is most interesting because this is where you point the CLSID to your executable on disk. For this method to work, there are some requirements to be met by this executable (more about that later).</p> <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+</code></pre></div></div> <p>The third command is most interesting because this is where you point the CLSID to your executable on disk, in this case <code class="highlighter-rouge">C:\beacon.dll</code>. For this method to work, there are some requirements to be met by this executable (more about that later).</p> <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
 New-Item –Path "HKCU:\Software\Classes\CLSID\" -Name "{781a4161-4490-408d-814a-93efe3b100c3}"
 
 New-Item –Path "HKCU:\Software\Classes\CLSID\{781a4161-4490-408d-814a-93efe3b100c3}"  -Name "InprocServer32"
